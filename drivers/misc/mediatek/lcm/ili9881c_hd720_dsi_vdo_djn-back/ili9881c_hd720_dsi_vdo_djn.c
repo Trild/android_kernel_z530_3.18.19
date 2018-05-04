@@ -9,8 +9,7 @@
 #elif defined(BUILD_UBOOT)
 	#include <asm/arch/mt_gpio.h>
 #else
-#include <mt-plat/mt_gpio.h>
-#include <mach/gpio_const.h>
+	#include <mt-plat/mt_gpio.h>
 #endif
 
 // ---------------------------------------------------------------------------
@@ -35,12 +34,9 @@
 static LCM_UTIL_FUNCS lcm_util = {0};
 
 #define SET_RESET_PIN(v)	(lcm_util.set_reset_pin((v)))
-
+#define SET_GPIO_OUT(n, v)	(lcm_util.set_gpio_out((n), (v)))
 #define UDELAY(n)		(lcm_util.udelay(n))
 #define MDELAY(n)		(lcm_util.mdelay(n))
-
-#define GPIO_VCC_LCM_EN (GPIO4 | 0x80000000)
-#define GPIO_VCC_LCM_EN_M_GPIO GPIO_MODE_00
 
 
 // ---------------------------------------------------------------------------
@@ -55,7 +51,7 @@ static LCM_UTIL_FUNCS lcm_util = {0};
 #define read_reg_v2(cmd, buffer, buffer_size)			    lcm_util.dsi_dcs_read_lcm_reg_v2(cmd, buffer, buffer_size)
 
 
-#define   LCM_DSI_CMD_MODE							0
+#define   LCM_DSI_CMD_MODE							1
 
 
 struct LCM_setting_table {
@@ -404,10 +400,6 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 static void lcm_init(void)
 {
-	mt_set_gpio_mode(GPIO_VCC_LCM_EN, GPIO_VCC_LCM_EN_M_GPIO);
-	mt_set_gpio_dir(GPIO_VCC_LCM_EN, GPIO_DIR_OUT);
-	mt_set_gpio_pull_enable(GPIO_VCC_LCM_EN, GPIO_PULL_DISABLE);
-	mt_set_gpio_out(GPIO_VCC_LCM_EN, 1);
 
         #ifdef BUILD_LK
 		printf("%s, LK ili9881c_djn debug: lcm_init()\n", __func__);
@@ -540,4 +532,3 @@ LCM_DRIVER ili9881c_hd720_dsi_vdo_djn_lcm_drv =
 	.update         = lcm_update,
 #endif
 };
-
