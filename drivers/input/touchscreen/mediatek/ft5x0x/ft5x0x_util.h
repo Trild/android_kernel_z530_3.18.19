@@ -7,7 +7,6 @@ extern struct tpd_device *tpd;
 */
 #define TPD_PIN_RST 	(0)
 #define TPD_PIN_EINT 	(1)
-//#define TS_MIUI8_KEYS
 
 static void ft5x0x_set_rst(bool bSet, int nDelay)
 {
@@ -112,6 +111,8 @@ static int tpd_touchinfo(struct i2c_client* i2c_client, struct touch_info *cinfo
 		low_byte = data[3 + 6 * i + 3];
 		low_byte &= 0x00FF;
 		cinfo->y[i] = high_byte | low_byte;
+
+		TPD_DEBUG(" cinfo->x[%d] = %d, cinfo->y[%d] = %d, cinfo->p[%d] = %d\n", i , cinfo->x[i], i, cinfo->y[i], i, cinfo->p[i]);
 	}
 
 	return true;
@@ -125,14 +126,14 @@ extern void tpd_button(unsigned int x, unsigned int y, unsigned int down);
 static DECLARE_WAIT_QUEUE_HEAD(waiter);
 static int tpd_flag = 0;
 
-static void tpd_down(struct input_dev *input_dev, int x, int y, int id)
+static void tpd_down(int x, int y, int id)
 {
-	input_report_key(input_dev, BTN_TOUCH, 1);
-	input_report_abs(input_dev, ABS_MT_TOUCH_MAJOR, 20);
-	input_report_abs(input_dev, ABS_MT_POSITION_X, x);
-	input_report_abs(input_dev, ABS_MT_POSITION_Y, y);
-	input_report_abs(input_dev, ABS_MT_TRACKING_ID, id);
-	input_mt_sync(input_dev);
+    input_report_key(tpd->dev, BTN_TOUCH, 1);
+    input_report_abs(tpd->dev, ABS_MT_TOUCH_MAJOR, 20);
+    input_report_abs(tpd->dev, ABS_MT_POSITION_X, x);
+    input_report_abs(tpd->dev, ABS_MT_POSITION_Y, y);
+    input_report_abs(tpd->dev, ABS_MT_TRACKING_ID, id);
+    input_mt_sync(tpd->dev);
 
 	if (FACTORY_BOOT == get_boot_mode() || RECOVERY_BOOT == get_boot_mode())
 	{
@@ -140,10 +141,11 @@ static void tpd_down(struct input_dev *input_dev, int x, int y, int id)
 	}
 }
 
-static void tpd_up(struct input_dev *input_dev, int x, int y)
+static void tpd_up(int x, int y)
 {
-	input_report_key(input_dev, BTN_TOUCH, 0);
-	input_mt_sync(input_dev);
+    TPD_DEBUG("%s x:%d y:%d\n", __func__, x, y);
+    input_report_key(tpd->dev, BTN_TOUCH, 0);
+    input_mt_sync(tpd->dev);
 
 	if (FACTORY_BOOT == get_boot_mode() || RECOVERY_BOOT == get_boot_mode())
 	{
@@ -151,12 +153,11 @@ static void tpd_up(struct input_dev *input_dev, int x, int y)
 	}
 }
 
-static int touch_event_handler(void* handle)
+static int touch_event_handler(void *unused)
 {
 	int i=0;
-	struct input_dev *input_dev = (struct input_dev*)handle;
 	struct touch_info cinfo, pinfo;
-	struct sched_param param = { .sched_priority = 4 };
+	struct sched_param param = { .sched_priority = RTPM_PRIO_TPD };
 
 	sched_setscheduler(current, SCHED_RR, &param);
 
@@ -168,8 +169,8 @@ static int touch_event_handler(void* handle)
 		tpd_flag = 0;
 		set_current_state(TASK_RUNNING);
 
-#ifdef CONFIG_HCT_TP_GESTRUE
-		if (touch_getsure_event_handler(input_dev, i2c_client)) continue;
+#ifdef FTS_GESTRUE
+		if (touch_getsure_event_handler(i2c_client)) continue;
 #endif
 
 		TPD_DEBUG("touch_event_handler start \n");
@@ -210,11 +211,13 @@ static int touch_event_handler(void* handle)
 		if(cinfo.count > 0)
 		{
 		    for(i =0; i < cinfo.count; i++)
-		         tpd_down(input_dev, cinfo.x[i], cinfo.y[i], cinfo.id[i]);
+		    {
+		         tpd_down(cinfo.x[i], cinfo.y[i], cinfo.id[i]);
+		    }
 		}else{
-		    tpd_up(input_dev, cinfo.x[0], cinfo.y[0]);
+		    tpd_up(cinfo.x[0], cinfo.y[0]);
 		}
-	   	input_sync(input_dev);
+	   	input_sync(tpd->dev);
 
 	} while (!kthread_should_stop());
 
@@ -249,11 +252,11 @@ static void tpd_irq_registration(struct i2c_client *client)
 						IRQF_TRIGGER_FALLING, TPD_DEVICE, NULL);
 	}
 
-#ifdef CONFIG_HCT_TP_GESTRUE
+#ifdef FTS_GESTRUE
 	fts_Gesture_init(tpd->dev);
 #endif
 
-	thread = kthread_run(touch_event_handler, tpd->dev, TPD_DEVICE);
+	thread = kthread_run(touch_event_handler, 0, TPD_DEVICE);
 }
 
 static int tpd_power_on(struct i2c_client *client)

@@ -9,18 +9,13 @@ scripts/kconfig/conf --silentoldconfig Kconfig
 make[2]: «include/generated/mach-types.h» не требует обновления.
   CALL    ../scripts/checksyscalls.sh
   CHK     include/generated/compile.h
+  DTC     arch/arm/boot/dts/vz6735_35u_i_m.dtb
 cameraisp drv by platform 
 *MTK_GPU_VERSION 1 = mali
 $CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT is [y]
 *MTK_GPU_VERSION 2 = midgard
 *MTK_GPU_VERSION 3 = r7p0_v2
 mali MTK evironment
-  CC      drivers/misc/mediatek/lcm/ili9881c_hd720_dsi_vdo_djn/ili9881c_hd720_dsi_vdo_djn.o
-  LD      drivers/misc/mediatek/lcm/ili9881c_hd720_dsi_vdo_djn/built-in.o
-  LD      drivers/misc/mediatek/lcm/built-in.o
-  LD      drivers/misc/mediatek/built-in.o
-  LD      drivers/misc/built-in.o
-  LD      drivers/built-in.o
   LINK    vmlinux
   LD      vmlinux.o
   MODPOST vmlinux.o

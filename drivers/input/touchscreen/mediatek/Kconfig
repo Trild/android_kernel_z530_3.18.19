@@ -120,4 +120,11 @@ config TOUCHSCREEN_MTK_FT5X0X
 
 source "drivers/input/touchscreen/mediatek/ft5x0x/Kconfig"
 
+config TOUCHSCREEN_MTK_FT5336
+	bool "FT5336 for Mediatek package"
+	default n
+
+config TOUCHSCREEN_MTK_FT5446
+	bool "FT5446 for Mediatek package"
+	default y
 endif
